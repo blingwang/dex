@@ -7,9 +7,17 @@
     </div>
     <h2>Email confirmation sent</h2>
   </header>
-<p>{{.FirstName}}, you will be receiving an email shortly at {{.Email}} to confirm your account and provide you with the next steps for logging into your new account.</p>
-<a class="btn btn-primary btn-block">Resend link</a>
-<a class="btn btn-primary btn-block btn-outline" href="{{.LoginURL}}">Return to log in</a>
+  {{ if .Error }}
+  <div class="alert alert-danger">{{ .Message }}</div>
+  {{ else }}
+  <p>{{.FirstName}}, you will be receiving an email shortly at {{.Email}} to confirm your account and provide you with the next steps for logging into your new account.</p>
+  {{ end }}
+  <form id="resendAccountConfirmationForm" method="POST" action="{{ "/send-account-confirmation" | absPath }}">
+    <button type="submit" class="btn btn-primary btn-block">Resend link</button>
+    <input type="hidden" name="login_url" value="{{.LoginURL}}" />
+    <input type="hidden" name="code" value="{{.Code}}" />
+  </form>
+  <a class="btn btn-primary btn-block btn-outline" href="{{.LoginURL}}">Return to log in</a>
 </div>
 
 {{ template "footer.html" }}

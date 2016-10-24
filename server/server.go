@@ -37,6 +37,7 @@ const (
 	LoginPageTemplateName              = "login.html"
 	RegisterTemplateName               = "register.html"
 	CreateAccountTemplateName          = "create-account.html"
+	SendAccountConfirmTemplateName     = "email-confirmation-sent.html"
 	VerifyEmailTemplateName            = "verify-email.html"
 	SendResetPasswordEmailTemplateName = "send-reset-password.html"
 	ResetPasswordTemplateName          = "reset-password.html"
@@ -73,6 +74,7 @@ type Server struct {
 	LoginTemplate                  *template.Template
 	RegisterTemplate               *template.Template
 	CreateAccountTemplate          *template.Template
+	SendAccountConfirmTemplate     *template.Template
 	VerifyEmailTemplate            *template.Template
 	SendResetPasswordEmailTemplate *template.Template
 	ResetPasswordTemplate          *template.Template
@@ -256,6 +258,8 @@ func (s *Server) HTTPHandler() http.Handler {
 
 	handleFunc(httpPathCreateAccount, handleCreateAccountFunc(s, s.CreateAccountTemplate))
 
+	handleFunc(httpPathSendAccountConfirm, handleSendAccountConfirmationFunc(s, s.SendAccountConfirmTemplate))
+
 	handleFunc(httpPathEmailVerify, handleEmailVerifyFunc(s.VerifyEmailTemplate,
 		s.IssuerURL, s.KeyManager.PublicKeys, s.UserManager))
 
@@ -386,19 +390,25 @@ func (s *Server) Login(ident oidc.Identity, key string) (string, error) {
 		}
 	}
 
-	if ses.Register {
-		code, err := s.SessionManager.NewSessionKey(sessionID)
-		if err != nil {
-			return "", err
-		}
+	// The commented code below checks session and redirects to register page if it's a register request initially.
+	// Local connector works fine without this. Even remote connectors probably work fine without it.
+	// Leave it as a comment for future reference when we enable remote connectors
 
-		ru := s.absURL(httpPathRegister)
-		q := ru.Query()
-		q.Set("code", code)
-		q.Set("state", ses.ClientState)
-		ru.RawQuery = q.Encode()
-		return ru.String(), nil
-	}
+	/*
+		if ses.Register {
+			code, err := s.SessionManager.NewSessionKey(sessionID)
+			if err != nil {
+				return "", err
+			}
+
+			ru := s.absURL(httpPathRegister)
+			q := ru.Query()
+			q.Set("code", code)
+			q.Set("state", ses.ClientState)
+			ru.RawQuery = q.Encode()
+			return ru.String(), nil
+		}
+	*/
 
 	remoteIdentity := user.RemoteIdentity{ConnectorID: ses.ConnectorID, ID: ses.Identity.ID}
 
@@ -461,6 +471,14 @@ func (s *Server) Login(ident oidc.Identity, key string) (string, error) {
 	code, err := s.SessionManager.NewSessionKey(sessionID)
 	if err != nil {
 		return "", fmt.Errorf("creating new session key: %v", err)
+	}
+
+	// Do account confirmation for local unverified user
+	if ses.ConnectorID == s.localConnectorID && !usr.EmailVerified {
+		q := url.Values{}
+		q.Set("code", code)
+		accountConfirmURL := path.Join(s.IssuerURL.Path, httpPathSendAccountConfirm) + "?" + q.Encode()
+		return accountConfirmURL, nil
 	}
 
 	ru := ses.RedirectURL

@@ -328,6 +328,7 @@ func setTemplates(srv *Server, tpls *template.Template) error {
 		{LoginPageTemplateName, &srv.LoginTemplate},
 		{RegisterTemplateName, &srv.RegisterTemplate},
 		{CreateAccountTemplateName, &srv.CreateAccountTemplate},
+		{SendAccountConfirmTemplateName, &srv.SendAccountConfirmTemplate},
 		{VerifyEmailTemplateName, &srv.VerifyEmailTemplate},
 		{SendResetPasswordEmailTemplateName, &srv.SendResetPasswordEmailTemplate},
 		{ResetPasswordTemplateName, &srv.ResetPasswordTemplate},

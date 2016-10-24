@@ -2,13 +2,12 @@ package server
 
 import (
 	"net/http"
+	"net/url"
+	"path"
 	"strings"
 
 	"github.com/coreos/dex/pkg/log"
-	"github.com/coreos/dex/session"
-	sessionmanager "github.com/coreos/dex/session/manager"
 	"github.com/coreos/dex/user"
-	usermanager "github.com/coreos/dex/user/manager"
 	"github.com/coreos/go-oidc/oidc"
 )
 
@@ -74,7 +73,6 @@ type createAccountTemplateData struct {
 	Email      string
 	Code       string
 	InviteCode string
-	LoginURL   string
 }
 
 func (d createAccountTemplateData) FieldError(fieldName string) *formError {
@@ -87,12 +85,12 @@ func (d createAccountTemplateData) FieldError(fieldName string) *formError {
 }
 
 type emailConfirmationData struct {
-	FirstName   string
-	Email       string
-	ClientID    string
-	RedirectURL string
-	LoginURL    string
-	Resend      string
+	Error     bool
+	Message   string
+	FirstName string
+	Email     string
+	LoginURL  string
+	Code      string
 }
 
 func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
@@ -120,24 +118,17 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 
 		// verify the user has a valid code.
 		key := r.Form.Get("code")
-		sessionID, err := s.SessionManager.ExchangeKey(key)
+		sessionID, err := s.SessionManager.GetSessionByKey(key)
 		if err != nil {
 			errPage(w, "Please authenticate before registering.", "", http.StatusUnauthorized)
 			return
 		}
 
-		// create a new code for them to use next time they hit the server.
-		code, err := s.SessionManager.NewSessionKey(sessionID)
-		if err != nil {
-			internalError(w, err)
-			return
-		}
 		ses, err := s.SessionManager.Get(sessionID)
 		if err != nil || ses == nil {
 			return
 		}
 
-		loginURL := newLoginURLFromSession(s.IssuerURL, ses, false, []string{}, "")
 		validate := r.Form.Get("validate") == "1"
 		formErrors := []formError{}
 
@@ -181,13 +172,12 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 		}
 
 		data := createAccountTemplateData{
-			Code:       code,
+			Code:       key,
 			FirstName:  firstName,
 			LastName:   lastName,
 			Company:    company,
 			Email:      email,
 			InviteCode: inviteCode,
-			LoginURL:   loginURL.String(),
 		}
 
 		if len(formErrors) > 0 || !validate {
@@ -200,16 +190,7 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 			return
 		}
 
-		var userID string
-		userID, err = createOrgAndOwner(
-			s.UserManager,
-			s.SessionManager,
-			ses,
-			firstName,
-			lastName,
-			company,
-			email,
-			password)
+		userID, err := s.UserManager.RegisterUserAndOrganization(firstName, lastName, company, email, password, ses.ConnectorID)
 
 		if err != nil {
 			formErrors := errToFormErrors(err)
@@ -223,49 +204,91 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 			return
 		}
 
+		ses, err = s.SessionManager.AttachRemoteIdentity(sessionID, oidc.Identity{
+			ID: userID,
+		})
+		if err != nil {
+			internalError(w, err)
+			return
+		}
+
 		ses, err = s.SessionManager.AttachUser(sessionID, userID)
 		if err != nil {
 			internalError(w, err)
 			return
 		}
 
-		usr, err := s.UserRepo.Get(nil, userID)
+		// Kill old session key and create a new code for resending account confirmation
+		if _, err := s.SessionManager.ExchangeKey(key); err != nil {
+			log.Errorf("Failed killing sessionKey %q: %v", key, err)
+		}
+		code, err := s.SessionManager.NewSessionKey(sessionID)
 		if err != nil {
 			internalError(w, err)
 			return
 		}
 
-		_, err = s.UserEmailer.SendEmailVerification(usr.ID, ses.ClientID, ses.RedirectURL)
-		if err != nil {
-			log.Errorf("Error sending email verification: %v", err)
-		}
-
-		execTemplate(w, s.EmailConfirmationSentTemplate, emailConfirmationData{
-			FirstName:   usr.FirstName,
-			Email:       usr.Email,
-			ClientID:    ses.ClientID,
-			RedirectURL: ses.RedirectURL.String(),
-			LoginURL:    loginURL.String(),
-		})
+		q := url.Values{}
+		q.Set("code", code)
+		accountConfirmURL := path.Join(s.IssuerURL.Path, httpPathSendAccountConfirm) + "?" + q.Encode()
+		w.Header().Set("Location", accountConfirmURL)
+		w.WriteHeader(http.StatusSeeOther)
 		return
 	}
 }
 
-func createOrgAndOwner(
-	userManager *usermanager.UserManager,
-	sessionManager *sessionmanager.SessionManager,
-	ses *session.Session,
-	firstName, lastName, company, email, password string) (string, error) {
-	userID, err := userManager.RegisterUserAndOrganization(firstName, lastName, company, email, password, ses.ConnectorID)
-	if err != nil {
-		return "", err
+func handleSendAccountConfirmationFunc(s *Server, tpl Template) http.HandlerFunc {
+
+	errPage := func(w http.ResponseWriter, msg, code, loginURL string, status int) {
+		data := emailConfirmationData{
+			Error:    true,
+			Message:  msg,
+			Code:     code,
+			LoginURL: loginURL,
+		}
+		execTemplateWithStatus(w, tpl, data, status)
 	}
 
-	ses, err = sessionManager.AttachRemoteIdentity(ses.ID, oidc.Identity{
-		ID: userID,
-	})
-	if err != nil {
-		return "", err
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			writeAPIError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		loginURL := r.Form.Get("login_url")
+
+		// verify the user has a valid code.
+		key := r.Form.Get("code")
+		sessionID, err := s.SessionManager.GetSessionByKey(key)
+		if err != nil {
+			errPage(w, "There was a problem processing your request.", key, loginURL, http.StatusUnauthorized)
+			return
+		}
+
+		ses, err := s.SessionManager.Get(sessionID)
+		if err != nil || ses == nil {
+			return
+		}
+
+		loginURL = newLoginURLFromSession(s.IssuerURL, ses, false, []string{}, "").String()
+		usr, err := s.UserRepo.Get(nil, ses.UserID)
+		if err != nil {
+			log.Errorf("Error getting user: %v", err)
+			errPage(w, "There was a problem processing your request.", key, loginURL, http.StatusInternalServerError)
+			return
+		}
+		_, err = s.UserEmailer.SendEmailVerification(usr.ID, ses.ClientID, ses.RedirectURL)
+		if err != nil {
+			log.Errorf("Error sending email verification: %v", err)
+			errPage(w, "There was a problem processing your request.", key, loginURL, http.StatusInternalServerError)
+		}
+
+		execTemplate(w, tpl, emailConfirmationData{
+			FirstName: usr.FirstName,
+			Email:     usr.Email,
+			LoginURL:  loginURL,
+			Code:      key,
+		})
 	}
-	return userID, nil
 }

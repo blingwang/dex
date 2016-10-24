@@ -34,7 +34,6 @@ func TestHandleCreateAccount(t *testing.T) {
 
 	testIssuerAuth := testIssuerURL
 	testIssuerAuth.Path = "/auth"
-	testLoginURL := "http://server.example.com/auth?client_id=client.example.com&connector_id=local&redirect_uri=http%3A%2F%2Fclient.example.com%2Fcallback&response_type=code&scope=openid&state="
 
 	str := func(s string) []string {
 		return []string{s}
@@ -61,7 +60,7 @@ func TestHandleCreateAccount(t *testing.T) {
 
 			wantStatus: http.StatusOK,
 			wantFormValues: url.Values{
-				"code":        str("code-3"),
+				"code":        str("code-2"),
 				"fname":       str(""),
 				"lname":       str(""),
 				"company":     str(""),
@@ -93,9 +92,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -121,9 +119,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -149,9 +146,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -177,9 +173,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "OrgName-1",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -205,9 +200,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -226,7 +220,7 @@ func TestHandleCreateAccount(t *testing.T) {
 				"terms":            str("on"),
 			},
 			connID:         "local",
-			wantStatus:     http.StatusOK,
+			wantStatus:     http.StatusSeeOther,
 			wantUserExists: true,
 		},
 		{
@@ -245,7 +239,7 @@ func TestHandleCreateAccount(t *testing.T) {
 				"terms":            str("on"),
 			},
 			connID:         "local",
-			wantStatus:     http.StatusOK,
+			wantStatus:     http.StatusSeeOther,
 			wantUserExists: true,
 		},
 		{
@@ -271,9 +265,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "aninvalidemail",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -301,9 +294,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      testUserEmail1,
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -331,9 +323,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      strings.ToUpper(testUserEmail1),
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -357,9 +348,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -385,9 +375,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -413,9 +402,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -441,9 +429,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "",
-				LoginURL:   testLoginURL,
 			},
 		},
 		{
@@ -469,9 +456,8 @@ func TestHandleCreateAccount(t *testing.T) {
 				LastName:   "last-name",
 				Company:    "company",
 				Email:      "test@example.com",
-				Code:       "code-3",
+				Code:       "code-2",
 				InviteCode: "123",
-				LoginURL:   testLoginURL,
 			},
 		},
 	}

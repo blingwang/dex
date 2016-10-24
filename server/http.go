@@ -39,6 +39,7 @@ var (
 	httpPathAPI                = "/api"
 	httpPathRegister           = "/register"
 	httpPathCreateAccount      = "/create-account"
+	httpPathSendAccountConfirm = "/send-account-confirmation"
 	httpPathEmailVerify        = "/verify-email"
 	httpPathVerifyEmailResend  = "/resend-verify-email"
 	httpPathSendResetPassword  = "/send-reset-password"
