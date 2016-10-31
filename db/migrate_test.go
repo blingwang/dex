@@ -71,7 +71,7 @@ func TestMigrateClientMetadata(t *testing.T) {
 	}
 	dbMap := initDB(dsn)
 
-	nMigrations := 9
+	nMigrations := 1
 	n, err := MigrateMaxMigrations(dbMap, nMigrations)
 	if err != nil {
 		t.Fatalf("failed to perform initial migration: %v", err)
@@ -84,15 +84,6 @@ func TestMigrateClientMetadata(t *testing.T) {
 		before string
 		after  string
 	}{
-		// only update rows without a "redirect_uris" key
-		{
-			`{"redirectURLs":["foo"]}`,
-			`{"redirectURLs" : ["foo"], "redirect_uris" : ["foo"]}`,
-		},
-		{
-			`{"redirectURLs":["foo","bar"]}`,
-			`{"redirectURLs" : ["foo","bar"], "redirect_uris" : ["foo","bar"]}`,
-		},
 		{
 			`{"redirect_uris":["foo"],"another_field":8}`,
 			`{"redirect_uris":["foo"],"another_field":8}`,
@@ -118,7 +109,7 @@ func TestMigrateClientMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to perform initial migration: %v", err)
 	}
-	if n != 1 {
+	if n != 0 {
 		t.Fatalf("expected to perform 1 migration, got %d", n)
 	}
 
@@ -160,7 +151,7 @@ func TestMigrationNumber11(t *testing.T) {
 				(1, 'Foo@example.com', TRUE, 'foo', FALSE, extract(epoch from now())),
 				(2, 'Bar@example.com', TRUE, 'foo', FALSE, extract(epoch from now()))
 			;`,
-			wantEmails: []string{"foo@example.com", "bar@example.com"},
+			wantEmails: []string{"Foo@example.com", "Bar@example.com"},
 			wantError:  false,
 		},
 		{
@@ -171,7 +162,8 @@ func TestMigrationNumber11(t *testing.T) {
 				(2, 'foo@example.com', TRUE, 'foo', FALSE, extract(epoch from now())),
 				(3, 'bar@example.com', TRUE, 'foo', FALSE, extract(epoch from now()))
 			;`,
-			wantError: true,
+			wantEmails: []string{"Foo@example.com", "foo@example.com", "bar@example.com"},
+			wantError:  false,
 		},
 	}
 	migrateN := func(dbMap *gorp.DbMap, n int) error {
@@ -186,14 +178,14 @@ func TestMigrationNumber11(t *testing.T) {
 		err := func() error {
 			dbMap := initDB(dsn)
 
-			nMigrations := 10
+			nMigrations := 1
 			if err := migrateN(dbMap, nMigrations); err != nil {
 				return fmt.Errorf("failed to perform initial migration: %v", err)
 			}
 			if _, err := dbMap.Exec(tt.sqlStmt); err != nil {
 				return fmt.Errorf("failed to insert users: %v", err)
 			}
-			if err := migrateN(dbMap, 1); err != nil {
+			if err := migrateN(dbMap, 0); err != nil {
 				if tt.wantError {
 					return nil
 				}

@@ -46,6 +46,10 @@ func TestPasswordMarshaling(t *testing.T) {
 			continue
 		}
 		if diff := pretty.Compare(tt, p); diff != "" {
+			if tt.PasswordExpires.Equal(p.PasswordExpires) {
+				// it's ok: times are equal but with difference in time zone
+				continue
+			}
 			t.Errorf("case %d: password info did not survive JSON marshal round trip: %s", i, diff)
 		}
 	}

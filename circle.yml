@@ -1,0 +1,44 @@
+machine:
+  environment:
+    GO15VENDOREXPERIMENT: 1
+    DEX_TEST_DSN: "postgres://postgres@127.0.0.1:15432/postgres?sslmode=disable" 
+    ISOLATED: true
+    DEX_TEST_LDAP_HOST: "tlstest.local:1389"
+    DEX_TEST_LDAPS_HOST: "tlstest.local:1636"
+    DEX_TEST_LDAP_BINDNAME: "cn=admin,dc=example,dc=org"
+    DEX_TEST_LDAP_BINDPASS: "admin"
+  services:
+    - docker
+
+dependencies:
+  override:
+    - ./build
+  post:
+    - go version
+    - go env
+
+test:
+  pre:
+    - go get golang.org/x/tools/cmd/cover
+    - docker pull quay.io/coreos/postgres
+    - docker pull osixia/openldap
+  override:
+    - |
+      # unit tests and functional tests
+      set -eu   
+      docker run -d -p 127.0.0.1:15432:5432 quay.io/coreos/postgres
+      LDAPCONTAINER=`docker run -e LDAP_TLS_PROTOCOL_MIN=3.0 -e LDAP_TLS_CIPHER_SUITE=NORMAL -d -p 127.0.0.1:1389:389 -p 127.0.0.1:1636:636 -h tlstest.local osixia/openldap:1.1.4`
+      ./test
+      docker cp ${LDAPCONTAINER}:container/service/:cfssl/assets/default-ca/default-ca.pem /tmp/openldap-ca.pem
+      docker cp ${LDAPCONTAINER}:container/service/slapd/assets/certs/ldap.key /tmp/ldap.key
+      chmod 644 /tmp/ldap.key
+      docker cp ${LDAPCONTAINER}:container/service/slapd/assets/certs/ldap.crt /tmp/ldap.crt
+      sudo sh -c 'echo "127.0.0.1 tlstest.local" >> /etc/hosts'
+      ./test-functional
+      DEX_TEST_DSN="sqlite3://:memory:" ./test-functional
+
+deployment:
+  hub:
+    tag: /[0-9]+(\.[0-9]+)*/
+    commands:
+      - bash build-container.sh
