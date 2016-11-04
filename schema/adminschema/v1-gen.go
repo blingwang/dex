@@ -106,6 +106,8 @@ type Admin struct {
 
 	Id string `json:"id,omitempty"`
 
+	OrganizationID string `json:"organizationId,omitempty"`
+
 	Password string `json:"password,omitempty"`
 }
 

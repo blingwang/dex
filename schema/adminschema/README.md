@@ -16,6 +16,7 @@ __Version:__ v1
 {
     email: string,
     id: string,
+    organizationId: string,
     password: string
 }
 ```

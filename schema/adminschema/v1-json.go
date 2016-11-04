@@ -40,6 +40,9 @@ const DiscoveryJSON = `{
         },
         "password": {
           "type": "string"
+        },
+        "organizationId": {
+          "type": "string"
         }
       }
     },

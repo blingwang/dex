@@ -104,16 +104,18 @@ func (a *AdminAPI) GetAdmin(id string) (adminschema.Admin, error) {
 	}
 
 	return adminschema.Admin{
-		Id:       id,
-		Email:    usr.Email,
-		Password: string(pwi.Password),
+		Id:             id,
+		Email:          usr.Email,
+		Password:       string(pwi.Password),
+		OrganizationID: usr.OrganizationID,
 	}, nil
 }
 
 func (a *AdminAPI) CreateAdmin(admn adminschema.Admin) (string, error) {
 	userID, err := a.userManager.CreateUser(user.User{
-		Email: admn.Email,
-		Admin: true}, user.Password(admn.Password), a.localConnectorID)
+		Email:          admn.Email,
+		OrganizationID: admn.OrganizationID,
+		Admin:          true}, user.Password(admn.Password), a.localConnectorID)
 	if err != nil {
 		return "", mapError(err)
 	}
