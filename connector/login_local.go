@@ -28,6 +28,12 @@ func handlePasswordLogin(lf oidc.LoginFunc, tpl *template.Template, idp password
 		q := r.URL.Query()
 		sessionKey := q.Get("session_key")
 
+		if sessionKey == "" {
+			w.Header().Set("Location", localErrorPath)
+			w.WriteHeader(http.StatusFound)
+			return
+		}
+
 		p := &Page{PostURL: r.URL.String(), Name: "Local", SessionKey: sessionKey}
 		if errMsg != "" {
 			p.Error = true

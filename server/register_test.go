@@ -272,13 +272,8 @@ func TestHandleRegister(t *testing.T) {
 			},
 			connID:         "oidc",
 			attachRemote:   true,
-			wantStatus:     http.StatusUnauthorized,
+			wantStatus:     http.StatusFound,
 			wantUserExists: false,
-			wantFormValues: url.Values{
-				"code":     str(""),
-				"email":    str(""),
-				"validate": str("1"),
-			},
 		},
 	}
 

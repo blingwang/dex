@@ -36,6 +36,7 @@ var (
 	httpPathKeys               = "/keys"
 	httpPathAuth               = "/auth"
 	httpPathHealth             = "/health"
+	httpPathError              = "/error"
 	httpPathAPI                = "/api"
 	httpPathRegister           = "/register"
 	httpPathCreateAccount      = "/create-account"
@@ -286,7 +287,8 @@ func handleAuthFunc(srv OIDCServer, baseURL url.URL, idpcs []connector.Connector
 			if err := srv.KillSession(sessionKey); err != nil {
 				log.Errorf("Failed killing sessionKey %q: %v", sessionKey, err)
 			}
-			renderLoginPage(w, r, srv, idpcs, register, tpl)
+			w.Header().Set("Location", httpPathError)
+			w.WriteHeader(http.StatusFound)
 			return
 		}
 

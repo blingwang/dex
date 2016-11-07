@@ -78,7 +78,8 @@ func handleRegisterFunc(s *Server, tpl Template) http.HandlerFunc {
 		key := r.Form.Get("code")
 		sessionID, err := s.SessionManager.GetSessionByKey(key)
 		if err != nil {
-			errPage(w, "Please authenticate before registering.", "", http.StatusUnauthorized)
+			w.Header().Set("Location", httpPathError)
+			w.WriteHeader(http.StatusFound)
 			return
 		}
 

@@ -10,7 +10,7 @@
   {{ if .Error }}
   <div class="alert alert-danger">{{ .Message }}</div>
   {{ else }}
-  <p>{{.FirstName}}, you will be receiving an email shortly at {{.Email}} to confirm your account and provide you with the next steps for logging into your new account.</p>
+  <p>{{if .FirstName}}{{.FirstName}}, you{{else}}You{{end}} will be receiving an email shortly at {{.Email}} to confirm your account and provide you with the next steps for logging into your new account.</p>
   {{ end }}
   <form id="resendAccountConfirmationForm" method="POST" action="{{ "/send-account-confirmation" | absPath }}">
     <button type="submit" class="btn btn-primary btn-block">Resend link</button>

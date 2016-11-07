@@ -120,7 +120,8 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 		key := r.Form.Get("code")
 		sessionID, err := s.SessionManager.GetSessionByKey(key)
 		if err != nil {
-			errPage(w, "Please authenticate before registering.", "", http.StatusUnauthorized)
+			w.Header().Set("Location", httpPathError)
+			w.WriteHeader(http.StatusFound)
 			return
 		}
 
@@ -262,7 +263,8 @@ func handleSendAccountConfirmationFunc(s *Server, tpl Template) http.HandlerFunc
 		key := r.Form.Get("code")
 		sessionID, err := s.SessionManager.GetSessionByKey(key)
 		if err != nil {
-			errPage(w, "There was a problem processing your request.", key, loginURL, http.StatusUnauthorized)
+			w.Header().Set("Location", httpPathError)
+			w.WriteHeader(http.StatusFound)
 			return
 		}
 
@@ -282,6 +284,7 @@ func handleSendAccountConfirmationFunc(s *Server, tpl Template) http.HandlerFunc
 		if err != nil {
 			log.Errorf("Error sending email verification: %v", err)
 			errPage(w, "There was a problem processing your request.", key, loginURL, http.StatusInternalServerError)
+			return
 		}
 
 		execTemplate(w, tpl, emailConfirmationData{

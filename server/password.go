@@ -75,10 +75,12 @@ func (h *SendResetPasswordEmailHandler) handleGET(w http.ResponseWriter, r *http
 			http.Redirect(w, r, handleURL.String(), http.StatusSeeOther)
 			return
 		}
-		// Even though we could not exchange the sessionKey to get a
-		// redirect URL, we can still continue as if they didn't pass
-		// one in, so we don't return here.
+		// We could not exchange the sessionKey to get a redirect URL.
+		// Redirect to error page
 		log.Errorf("could not exchange sessionKey: %v", err)
+		w.Header().Set("Location", httpPathError)
+		w.WriteHeader(http.StatusFound)
+		return
 	}
 
 	data := sendResetPasswordEmailData{}

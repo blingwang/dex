@@ -1,0 +1,16 @@
+{{ template "header.html" }}
+
+<div class="middle-box">
+  <header>
+    <div class="logo">
+      {{ template "logo.svg.html" }}
+    </div>
+    <h2>Authentication Error</h2>
+  </header>
+
+  <p>To try again with a new authentication session, please go to login page by clicking the button below.</p>
+
+  <a class="btn btn-primary btn-block" href="{{ .LoginURL }}">Log in to my account</a>
+</div>
+
+{{ template "footer.html" }}

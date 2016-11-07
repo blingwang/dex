@@ -180,7 +180,7 @@ func TestSendResetPasswordEmailHandler(t *testing.T) {
 			},
 			method: "GET",
 
-			wantCode: http.StatusBadRequest,
+			wantCode: http.StatusFound,
 		},
 		{ // Case 8
 

@@ -32,12 +32,14 @@ type ServerConfig struct {
 	IssuerURL                    string
 	IssuerName                   string
 	IssuerLogoURL                string
+	AccountHomeURL               string
 	TemplateDir                  string
 	EmailTemplateDirs            []string
 	EmailFromAddress             string
 	EmailerConfigFile            string
 	StateConfig                  StateConfigurer
 	EnableRegistration           bool
+	AllowUnverifiedEmail         bool
 	EnableClientRegistration     bool
 	EnableClientCredentialAccess bool
 	RegisterOnFirstLogin         bool
@@ -65,6 +67,11 @@ func (cfg *ServerConfig) Server() (*Server, error) {
 		return nil, err
 	}
 
+	au, err := url.Parse(cfg.AccountHomeURL)
+	if err != nil {
+		return nil, err
+	}
+
 	tpl, err := getTemplates(cfg.IssuerName, cfg.IssuerURL, cfg.IssuerLogoURL, cfg.EnableRegistration, cfg.TemplateDir)
 	if err != nil {
 		return nil, err
@@ -72,9 +79,10 @@ func (cfg *ServerConfig) Server() (*Server, error) {
 
 	km := key.NewPrivateKeyManager()
 	srv := Server{
-		IssuerURL:  *iu,
-		KeyManager: km,
-		Templates:  tpl,
+		IssuerURL:      *iu,
+		AccountHomeURL: *au,
+		KeyManager:     km,
+		Templates:      tpl,
 
 		HealthChecks: []health.Checkable{km},
 		Connectors:   []connector.Connector{},
@@ -83,6 +91,7 @@ func (cfg *ServerConfig) Server() (*Server, error) {
 		EnableClientRegistration:     cfg.EnableClientRegistration,
 		EnableClientCredentialAccess: cfg.EnableClientCredentialAccess,
 		RegisterOnFirstLogin:         cfg.RegisterOnFirstLogin,
+		AllowUnverifiedEmail:         cfg.AllowUnverifiedEmail,
 	}
 
 	err = cfg.StateConfig.Configure(&srv)
@@ -334,6 +343,7 @@ func setTemplates(srv *Server, tpls *template.Template) error {
 		{ResetPasswordTemplateName, &srv.ResetPasswordTemplate},
 		{EmailConfirmationSentTemplateName, &srv.EmailConfirmationSentTemplate},
 		{OOBTemplateName, &srv.OOBTemplate},
+		{ErrorPageTemplateName, &srv.ErrorPageTemplate},
 	} {
 		tpl, err := findTemplate(t.templateName, tpls)
 		if err != nil {

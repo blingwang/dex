@@ -34,6 +34,7 @@ func main() {
 	listen := fs.String("listen", "http://127.0.0.1:5556", "the address that the server will listen on")
 
 	issuer := fs.String("issuer", "http://127.0.0.1:5556/dex", "the issuer's location")
+	accountHome := fs.String("account-home", "http://127.0.0.1:5555", "the account home page url")
 
 	certFile := fs.String("tls-cert-file", "", "the server's certificate file for TLS connection")
 	keyFile := fs.String("tls-key-file", "", "the server's private key file for TLS connection")
@@ -48,6 +49,8 @@ func main() {
 
 	enableRegistration := fs.Bool("enable-registration", false, "Allows users to self-register. This flag cannot be used in combination with --enable-automatic-registration.")
 	registerOnFirstLogin := fs.Bool("enable-automatic-registration", false, "When a user logs in through a federated identity service, automatically register them if they don't have an account. This flag cannot be used in combination with --enable-registration.")
+
+	allowUnverifiedEmail := fs.Bool("allow-unverified-email", false, "Allows users to log in without verifying their emails.")
 
 	enableClientRegistration := fs.Bool("enable-client-registration", false, "Allow dynamic registration of clients")
 
@@ -141,6 +144,7 @@ func main() {
 
 	scfg := server.ServerConfig{
 		IssuerURL:                    *issuer,
+		AccountHomeURL:               *accountHome,
 		TemplateDir:                  *templates,
 		EmailTemplateDirs:            emailTemplateDirs,
 		EmailFromAddress:             *emailFrom,
@@ -149,6 +153,7 @@ func main() {
 		IssuerLogoURL:                *issuerLogoURL,
 		EnableRegistration:           *enableRegistration,
 		EnableClientRegistration:     *enableClientRegistration,
+		AllowUnverifiedEmail:         *allowUnverifiedEmail,
 		EnableClientCredentialAccess: *apiUseClientCredentials,
 		RegisterOnFirstLogin:         *registerOnFirstLogin,
 	}

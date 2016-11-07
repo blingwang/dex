@@ -43,6 +43,7 @@ const (
 	ResetPasswordTemplateName          = "reset-password.html"
 	OOBTemplateName                    = "oob-template.html"
 	EmailConfirmationSentTemplateName  = "email-confirmation-sent.html"
+	ErrorPageTemplateName              = "error-page.html"
 	APIVersion                         = "v1"
 )
 
@@ -68,7 +69,8 @@ type OIDCServer interface {
 type JWTVerifierFactory func(clientID string) oidc.JWTVerifier
 
 type Server struct {
-	IssuerURL url.URL
+	IssuerURL      url.URL
+	AccountHomeURL url.URL
 
 	Templates                      *template.Template
 	LoginTemplate                  *template.Template
@@ -80,6 +82,7 @@ type Server struct {
 	ResetPasswordTemplate          *template.Template
 	OOBTemplate                    *template.Template
 	EmailConfirmationSentTemplate  *template.Template
+	ErrorPageTemplate              *template.Template
 
 	HealthChecks []health.Checkable
 	// TODO(ericchiang): Make this a map of ID to connector.
@@ -104,6 +107,7 @@ type Server struct {
 	EnableClientRegistration     bool
 	EnableClientCredentialAccess bool
 	RegisterOnFirstLogin         bool
+	AllowUnverifiedEmail         bool
 
 	dbMap            *gorp.DbMap
 	localConnectorID string
@@ -251,6 +255,7 @@ func (s *Server) HTTPHandler() http.Handler {
 	handleFunc(httpPathToken, handleTokenFunc(s))
 	handleFunc(httpPathKeys, handleKeysFunc(s.KeyManager, clock))
 	handle(httpPathHealth, makeHealthHandler(checks))
+	handleFunc(httpPathError, handleErrorFunc(s.AccountHomeURL, s.ErrorPageTemplate))
 
 	if s.EnableRegistration {
 		handleFunc(httpPathRegister, handleRegisterFunc(s, s.RegisterTemplate))
@@ -474,7 +479,7 @@ func (s *Server) Login(ident oidc.Identity, key string) (string, error) {
 	}
 
 	// Do account confirmation for local unverified user
-	if ses.ConnectorID == s.localConnectorID && !usr.EmailVerified {
+	if !s.AllowUnverifiedEmail && ses.ConnectorID == s.localConnectorID && !usr.EmailVerified {
 		q := url.Values{}
 		q.Set("code", code)
 		accountConfirmURL := path.Join(s.IssuerURL.Path, httpPathSendAccountConfirm) + "?" + q.Encode()

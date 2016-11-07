@@ -86,8 +86,7 @@ func (c *LocalConnector) LoginURL(sessionKey, prompt string) (string, error) {
 }
 
 func (c *LocalConnector) Handler(errorURL url.URL) http.Handler {
-	route := path.Join(c.namespace.Path, "/login")
-	return handlePasswordLogin(c.loginFunc, c.loginTpl, c.idp, route, errorURL)
+	return handlePasswordLogin(c.loginFunc, c.loginTpl, c.idp, "/error", errorURL)
 }
 
 func (c *LocalConnector) Sync() chan struct{} {

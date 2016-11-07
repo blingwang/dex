@@ -1,6 +1,7 @@
 package server
 
 import (
+	"html/template"
 	"net/http"
 	"net/url"
 
@@ -82,4 +83,16 @@ func redirectAuthError(w http.ResponseWriter, err error, state string, redirectU
 
 	w.Header().Set("Location", redirectURL.String())
 	w.WriteHeader(http.StatusFound)
+}
+
+type errorPageTemplateData struct {
+	LoginURL string
+}
+
+func handleErrorFunc(loginURL url.URL, tpl *template.Template) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		execTemplateWithStatus(w, tpl, errorPageTemplateData{
+			LoginURL: loginURL.String(),
+		}, http.StatusUnauthorized)
+	}
 }
