@@ -71,15 +71,6 @@
       </div>
     </div>
 
-    <div class="form-group {{ if .FieldError "invite-code" }}has-error{{ end }}">
-      <input required name="invite-code" type="text" class="form-control" placeholder="Invite Code" value="{{.InviteCode}}"/>
-      <div class="help-block">
-        {{ with .FieldError "invite-code" }}
-          {{ .Error }}
-        {{ end }}
-      </div>
-    </div>
-
     <div class="form-group left">      
       <div class="checkbox">
         <input id="terms" name="terms" type="checkbox">

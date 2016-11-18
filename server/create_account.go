@@ -53,10 +53,6 @@ var (
 		Field: "password-match",
 		Error: "The passwords you entered are not matched. Please enter again.",
 	}
-	ErrorInvalidInviteCode = formError{
-		Field: "invite-code",
-		Error: "Required",
-	}
 	ErrorTermsNotAccepted = formError{
 		Field: "terms",
 		Error: "Please accept the Terms of Service below in order to create an account",
@@ -72,7 +68,6 @@ type createAccountTemplateData struct {
 	Company    string
 	Email      string
 	Code       string
-	InviteCode string
 }
 
 func (d createAccountTemplateData) FieldError(fieldName string) *formError {
@@ -139,7 +134,6 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 		email := strings.TrimSpace(r.Form.Get("email"))
 		password := r.Form.Get("password")
 		confirmPassword := r.Form.Get("confirm-password")
-		inviteCode := r.Form.Get("invite-code")
 		terms := r.Form.Get("terms")
 
 		if validate {
@@ -164,21 +158,17 @@ func handleCreateAccountFunc(s *Server, tpl Template) http.HandlerFunc {
 			if password != "" && confirmPassword != "" && password != confirmPassword {
 				formErrors = append(formErrors, ErrorPasswordNotMatch)
 			}
-			if inviteCode == "" {
-				formErrors = append(formErrors, ErrorInvalidInviteCode)
-			}
 			if terms != "on" {
 				formErrors = append(formErrors, ErrorTermsNotAccepted)
 			}
 		}
 
 		data := createAccountTemplateData{
-			Code:       key,
-			FirstName:  firstName,
-			LastName:   lastName,
-			Company:    company,
-			Email:      email,
-			InviteCode: inviteCode,
+			Code:      key,
+			FirstName: firstName,
+			LastName:  lastName,
+			Company:   company,
+			Email:     email,
 		}
 
 		if len(formErrors) > 0 || !validate {
@@ -273,7 +263,7 @@ func handleSendAccountConfirmationFunc(s *Server, tpl Template) http.HandlerFunc
 			return
 		}
 
-		loginURL = newLoginURLFromSession(s.IssuerURL, ses, false, []string{}, "").String()
+		loginURL = s.AccountHomeURL.String()
 		usr, err := s.UserRepo.Get(nil, ses.UserID)
 		if err != nil {
 			log.Errorf("Error getting user: %v", err)
