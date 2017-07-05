@@ -33,4 +33,4 @@ export GOPATH=${PWD}/gopath
 export GOBIN=${PWD}/bin
 export GO15VENDOREXPERIMENT=1
 export VERSION=$(./git-version)
-LD_FLAGS="-X main.version=${VERSION}"
+LD_FLAGS="-X main.version=${VERSION} -s"

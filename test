@@ -41,7 +41,7 @@ split=(${TEST// / })
 TEST=${split[@]/#/github.com/coreos/dex/}
 
 echo "Running tests..."
-go test ${COVER} $@ ${TEST}
+go test -ldflags -s ${COVER} $@ ${TEST}
 
 echo "Checking gofmt..."
 fmtRes=$(gofmt -l $FMT)
